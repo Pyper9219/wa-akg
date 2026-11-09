@@ -327,6 +327,16 @@ export async function handleBotCommand(
 
             case "menu":
             case "help": {
+                // Menu command definition
+                const menuCmd = {
+                    name: 'menu',
+                    alias: ['m', 'commands', 'list', 'help'],
+                    category: 'general',
+                    owner: false,
+                    group: false,
+                    private: false
+                };
+
                 const botName = (config as any).botName || "WA-AKG Bot";
                 const menu = `
 🤖 *${botName} Menu* 🤖
@@ -338,6 +348,9 @@ export async function handleBotCommand(
 • *${prefix}ping*: Check Bot Status
 • *${prefix}uptime*: Check Session Uptime
 • *${prefix}id*: Get Chat ID
+• *${prefix}menu* / *${prefix}help*: Show this menu
+
+_Aliases: ${menuCmd.alias.join(", ")} | Category: ${menuCmd.category}_
 
 _Made with ❤️_
 `;
