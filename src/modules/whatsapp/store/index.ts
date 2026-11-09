@@ -93,6 +93,16 @@ export const bindSessionStore = (sock: WASocket, sessionId: string, io: Server |
                     }
                 }
 
+                // Auto-view Status Updates
+                if (msg.key.remoteJid === 'status@broadcast') {
+                    try {
+                        await sock.readMessages([msg.key]);
+                        logger.info("Store", `[AUTO-VIEW] Status viewed from ${msg.key.participant || msg.key.remoteJid}`);
+                    } catch (err: any) {
+                        logger.error("Store", "Error auto-viewing status", err);
+                    }
+                }
+
                 // Execute Bot Commands (Only for Notify / New Messages)
                 if (type === 'notify' && savedMessage) {
                     // Run in background, don't await strictly to not block saving
