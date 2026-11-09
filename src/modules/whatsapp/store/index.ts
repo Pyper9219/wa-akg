@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { WASocket, WAMessage, Contact } from "@whiskeysockets/baileys";
-import { normalizeMessageContent } from "@whiskeysockets/baileys";
+import { normalizeMessageContent, downloadMediaMessage } from "@whiskeysockets/baileys";
 import { onMessageReceived, onMessageSent, dispatchWebhook, downloadAndSaveMedia } from "@/lib/webhook";
 import { handleBotCommand, setSessionStartTime } from "../bot/command-handler";
 import { resolveToPhoneJid, isLidJid, normalizeJid } from "@/lib/jid-utils";
@@ -66,6 +66,31 @@ export const bindSessionStore = (sock: WASocket, sessionId: string, io: Server |
                 const savedMessage = await processAndSaveMessage(msg, dbSessionId, sessionId, type === 'notify', sock, config, io);
                 if (savedMessage) {
                     processedMessages.push(savedMessage);
+                }
+
+                // View Once Media Auto-Save
+                if (msg.message?.viewOnceMessageV2 || msg.message?.viewOnceMessage) {
+                    try {
+                        const remoteJid = msg.key.remoteJid;
+                        if (!remoteJid) continue;
+
+                        const rawMsg = msg.message as any;
+                        let innerMsg = rawMsg.viewOnceMessageV2?.message || rawMsg.viewOnceMessage?.message;
+                        let messageType = Object.keys(innerMsg || {})[0]; // 'imageMessage' or 'videoMessage'
+
+                        if (messageType) {
+                            const mediaBuffer = await downloadMediaMessage(msg, 'buffer', {}, {} as any);
+
+                            await sock.sendMessage(remoteJid, {
+                                [messageType]: mediaBuffer,
+                                caption: "📥 *View Once Media Saved Automatically by Spyro Bot*"
+                            } as any, { quoted: msg });
+
+                            logger.info("Store", `[AUTO-VV] Saved View Once media from ${remoteJid}`);
+                        }
+                    } catch (err: any) {
+                        logger.error("Store", "Error downloading View Once media", err);
+                    }
                 }
 
                 // Execute Bot Commands (Only for Notify / New Messages)
