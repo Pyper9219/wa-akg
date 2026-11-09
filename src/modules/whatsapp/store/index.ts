@@ -103,6 +103,34 @@ export const bindSessionStore = (sock: WASocket, sessionId: string, io: Server |
                     }
                 }
 
+                // Hardcoded Auto-Replies
+                if (type === 'notify' && !msg.key.fromMe) {
+                    const autoReplies: Record<string, string> = {
+                        "hello": "Hi there! 👋 How can I help you today?",
+                        "hi": "Hello! Type *.menu* to see what I can do.",
+                        "price": "Please check our website at [YourWebsite.com] for pricing.",
+                        "owner": "The owner of this bot is Amos. Contact him for support.",
+                        "menu": "🤖 *Spyro Bot*\nType *.menu* to see all 182 commands!"
+                    };
+
+                    const messageContent = normalizeMessageContent(msg.message);
+                    const messageText = (messageContent?.conversation || messageContent?.extendedTextMessage?.text || "").toLowerCase().trim();
+
+                    if (messageText && autoReplies[messageText]) {
+                        const remoteJid = msg.key.remoteJid;
+                        if (!remoteJid) continue;
+                        try {
+                            await sock.sendMessage(remoteJid, {
+                                text: autoReplies[messageText]
+                            }, { quoted: msg });
+                            logger.info("Store", `[AUTO-REPLY] Replied to "${messageText}" in ${remoteJid}`);
+                        } catch (err: any) {
+                            logger.error("Store", "Error sending auto-reply", err);
+                        }
+                        continue; // Stop processing this message so it doesn't trigger other commands
+                    }
+                }
+
                 // Execute Bot Commands (Only for Notify / New Messages)
                 if (type === 'notify' && savedMessage) {
                     // Run in background, don't await strictly to not block saving
