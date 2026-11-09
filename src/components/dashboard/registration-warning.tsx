@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -11,11 +11,26 @@ interface RegistrationWarningProps {
 }
 
 export function RegistrationWarning({ role, registrationEnabled }: RegistrationWarningProps) {
-    const t = useTranslations("settings");
+    let t: any;
+    try {
+        t = useTranslations("settings");
+    } catch {
+        const fallbackT = (key: string) => {
+            const fallback: Record<string, string> = {
+                registrationWarningTitle: "Registration is open",
+                registrationWarningDesc: "Anyone can create an account. You can disable this in Settings.",
+                registrationWarningAction: "Go to Settings",
+            };
+            return fallback[key] || key;
+        };
+        t = fallbackT;
+    }
+
+    const [shown, setShown] = useState(false);
 
     useEffect(() => {
+        if (shown) return;
         if (role === "SUPERADMIN" && registrationEnabled) {
-            // Delay toast slightly to wait for `<Toaster>` provider mount in layout
             const timer = setTimeout(() => {
                 toast(t("registrationWarningTitle"), {
                     description: t("registrationWarningDesc"),
@@ -27,11 +42,12 @@ export function RegistrationWarning({ role, registrationEnabled }: RegistrationW
                         onClick: () => window.location.href = "/dashboard/settings"
                     }
                 });
+                setShown(true);
             }, 1000);
 
             return () => clearTimeout(timer);
         }
-    }, [role, registrationEnabled, t]);
+    }, [role, registrationEnabled, t, shown]);
 
     return null;
 }

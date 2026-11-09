@@ -102,12 +102,10 @@ export default async function RootLayout({
 }>) {
   const allowIndexing = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";
   let locale = "en";
-  let localeResolved = false;
   try {
     const resolved = await getLocale();
     if (resolved) {
       locale = resolved;
-      localeResolved = true;
     }
   } catch {
     locale = "en";
@@ -125,19 +123,12 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <div className="fixed inset-0 -z-50 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background dark:from-primary/10 dark:via-background dark:to-background pointer-events-none" suppressHydrationWarning={true} />
-        {localeResolved ? (
-          <NextIntlClientProvider>
-            <Providers>
-              <TopLoader />
-              {children}
-            </Providers>
-          </NextIntlClientProvider>
-        ) : (
+        <NextIntlClientProvider locale={locale as any}>
           <Providers>
             <TopLoader />
             {children}
           </Providers>
-        )}
+        </NextIntlClientProvider>
       </body>
     </html>
   );
